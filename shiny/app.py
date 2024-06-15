@@ -3,22 +3,20 @@ from shiny.express import input, render, ui
 import os
 from shiny.types import ImgData, FileInfo
 import pandas as pd
-from pathlib import Path
+from shinywidgets import render_widget
+from ultralytics import YOLO
 from PIL import Image
-
-# @render.image
-# def image():
-#     from pathlib import Path
-#
-#     dir = Path(__file__).resolve().parent
-#     img: ImgData = {"src": str(dir / "img/sbs_logo.jpeg"), "width": "100px"}
-#     return img
-
+import plotly.express as px
 
 ui.page_opts(title="Определение дефектов сварных швов с помощь ИИ", window_title="sbs_solution")
 
-with ui.layout_columns(col_widths=[12, 12, 12]):
-    with ui.card(height=400):
+names = {0: "Прилегающие дефекты", 1: "Дефекты целостности",
+         2: "Дефекты геометрии", 3: "Дефекты постобработки",
+         4: "Дефекты невыполнения"}
+dict_class = {}
+
+with ui.layout_columns(col_widths=[12, 12, 12, 12, 12]):
+    with ui.card(height=300):
         ui.card_header("Выберете фото сварного шва:")
         ui.input_file("file1", "", accept=[".png, .jpeg, .jpg", ".csv"], multiple=False)
 
@@ -29,7 +27,7 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
             if file is None:
                 return pd.DataFrame()
             img = Image.open(file[0]["datapath"])
-            img.save('../shiny/img/photo.png')
+            img.save('shiny/img/photo.png')
             return pd.DataFrame({"img": [img]})  # pyright: ignore[reportUnknownMemberType]
 
     with ui.layout_column_wrap(fill=False):
@@ -43,10 +41,10 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
 
                 if image.empty:
                     return pd.DataFrame()
-                print(image.img[0].fp)
+
                 img_mb_info = pd.DataFrame(
                     {
-                        "Size": [os.path.getsize('img/photo.png') / 1_048_576]
+                        "Size": [round(os.path.getsize('shiny/img/photo.png') / 1_048_576, 2)]
                     }
                 )
                 return img_mb_info
@@ -58,7 +56,6 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
             @render.table
             def img_size():
                 image = parsed_file()
-
                 if image.empty:
                     return pd.DataFrame()
                 width, height = image.img[0].size
@@ -69,7 +66,17 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
                     }
                 )
                 return img_size_info
-    with ui.card(height=400):
+
+    with ui.card(height=200):
+        ui.card_header("Памятка по дефектам:")
+
+
+        @render.table
+        def info():
+            return pd.DataFrame({0: "Прилегающие дефекты", 1: "Дефекты целостности",
+                                 2: "Дефекты геометрии", 3: "Дефекты постобработки",
+                                 4: "Дефекты невыполнения"}, index=[0])
+    with ui.card(height=800):
         ui.card_header("Итоговый результат:")
 
 
@@ -80,9 +87,39 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
             if image.empty:
                 return pd.DataFrame()
 
-            img: ImgData = {"src": "../shiny/img/sbs_logo.jpeg", "width": "100px"}
-            os.remove("img/photo.png")
+            net = YOLO('shiny/best.pt')
+            image_path = 'shiny/img/photo.png'
+            result = net(image_path)[0]
+            for box in result.boxes:
+                item = int(box.cls.item())
+                if item not in dict_class:
+                    dict_class[item] = [box.conf.item()]
+                else:
+                    dict_class[item].append(box.conf.item())
+            result.save(filename="shiny/img/photo.png")  # save to disk
+            img: ImgData = {"src": 'shiny/img/photo.png', "width": "1200px"}
 
             return img
+
     with ui.card(height=400):
-        ui.card_header("Распределение вероятностей по дефекту:")
+        ui.card_header("Статистика обработки изображения:")
+
+
+        @render_widget
+        def plot():
+            image = parsed_file()
+            if image.empty:
+                return pd.DataFrame()
+
+            data = {"class": [names[x] for x in dict_class.keys()], "count": [len(dict_class[x]) for x in dict_class]}
+
+            scatterplot = px.histogram(
+                data_frame=data,
+                x="class",
+                y="count", nbins=20
+            ).update_layout(
+                title={"text": "Количество дефектов каждого из класса"},
+                yaxis_title="Количество",
+                xaxis_title="Название дефекта",
+            )
+            return scatterplot

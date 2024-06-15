@@ -3,11 +3,13 @@ brotli
 conda-content-trust
 pandas~=2.2.2
 pip-chill
-plotly
+plotly~=5.22.0
 pysocks
 rsconnect-python
 ruamel.yaml
 shinylive
-shinywidgets
+shinywidgets~=0.3.2
 
 shiny~=0.10.2
+ultralytics~=8.2.32
+pillow~=10.3.0
