@@ -29,7 +29,7 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
             if file is None:
                 return pd.DataFrame()
             img = Image.open(file[0]["datapath"])
-            img.save("../shiny/img/photo.png")
+            img.save('../shiny/img/photo.png')
             return pd.DataFrame({"img": [img]})  # pyright: ignore[reportUnknownMemberType]
 
     with ui.layout_column_wrap(fill=False):
@@ -46,7 +46,7 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
                 print(image.img[0].fp)
                 img_mb_info = pd.DataFrame(
                     {
-                        "Size": [os.path.getsize('../shiny/img/photo.png')/1_048_576]
+                        "Size": [os.path.getsize('img/photo.png') / 1_048_576]
                     }
                 )
                 return img_mb_info
@@ -81,7 +81,8 @@ with ui.layout_columns(col_widths=[12, 12, 12]):
                 return pd.DataFrame()
 
             img: ImgData = {"src": "../shiny/img/sbs_logo.jpeg", "width": "100px"}
-            os.remove("../shiny/img/photo.png")
+            os.remove("img/photo.png")
+
             return img
     with ui.card(height=400):
         ui.card_header("Распределение вероятностей по дефекту:")
