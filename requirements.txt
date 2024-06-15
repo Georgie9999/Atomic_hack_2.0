@@ -1,0 +1,11 @@
+anaconda-anon-usage
+brotli
+conda-content-trust
+pandas
+pip-chill
+plotly
+pysocks
+rsconnect-python
+ruamel.yaml
+shinylive
+shinywidgets
