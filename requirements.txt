@@ -1,7 +1,7 @@
 anaconda-anon-usage
 brotli
 conda-content-trust
-pandas
+pandas~=2.2.2
 pip-chill
 plotly
 pysocks
@@ -9,3 +9,5 @@ rsconnect-python
 ruamel.yaml
 shinylive
 shinywidgets
+
+shiny~=0.10.2
