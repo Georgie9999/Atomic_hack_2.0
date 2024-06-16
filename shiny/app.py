@@ -1,12 +1,12 @@
 from shiny import reactive
 from shiny.express import input, render, ui
-import os
 from shiny.types import ImgData, FileInfo
 import pandas as pd
 from shinywidgets import render_widget
 from ultralytics import YOLO
 from PIL import Image
 import plotly.express as px
+import sys
 
 ui.page_opts(title="Определение дефектов сварных швов с помощь ИИ", window_title="sbs_solution")
 
@@ -27,7 +27,6 @@ with ui.layout_columns(col_widths=[12, 12, 12, 12, 12]):
             if file is None:
                 return pd.DataFrame()
             img = Image.open(file[0]["datapath"])
-            img.save('shiny/img/photo.png')
             return pd.DataFrame({"img": [img]})  # pyright: ignore[reportUnknownMemberType]
 
     with ui.layout_column_wrap(fill=False):
@@ -41,10 +40,11 @@ with ui.layout_columns(col_widths=[12, 12, 12, 12, 12]):
 
                 if image.empty:
                     return pd.DataFrame()
-
+                size = round(sys.getsizeof(image.img[0].tobytes())/ 1_048_5760, 2)
+                print(size)
                 img_mb_info = pd.DataFrame(
                     {
-                        "Size": [round(os.path.getsize('shiny/img/photo.png') / 1_048_576, 2)]
+                        "Size": [size]
                     }
                 )
                 return img_mb_info
@@ -87,17 +87,16 @@ with ui.layout_columns(col_widths=[12, 12, 12, 12, 12]):
             if image.empty:
                 return pd.DataFrame()
 
-            net = YOLO('shiny/best.pt')
-            image_path = 'shiny/img/photo.png'
-            result = net(image_path)[0]
+            net = YOLO('./best.pt')
+            result = net(image.img[0])[0]
             for box in result.boxes:
                 item = int(box.cls.item())
                 if item not in dict_class:
                     dict_class[item] = [box.conf.item()]
                 else:
                     dict_class[item].append(box.conf.item())
-            result.save(filename="shiny/img/photo.png")  # save to disk
-            img: ImgData = {"src": 'shiny/img/photo.png', "width": "1200px"}
+            result.save(filename="photo.png")
+            img: ImgData = {"src": './photo.png', "width": "1200px"}
 
             return img
 

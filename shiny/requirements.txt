@@ -1,6 +1,4 @@
-anaconda-anon-usage
 brotli
-conda-content-trust
 pandas~=2.2.2
 pip-chill
 plotly~=5.22.0
